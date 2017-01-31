@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Lista de Productos</title>
+	<!--Bootstrap css-->
+	<link rel="stylesheet" type="text/css" href="node_modules\bootstrap\dist\css\bootstrap.min.css">
+
+	<!--JQuery-->
+	<script type="text/javascript" src="node_modules\jquery\dist\jquery.min.js"></script>
+
+	<!--Bootstrap.js-->
+	<script type="text/javascript" src="node_modules\bootstrap\dist\js\bootstrap.min.js"></script>
+	<style>
+		td i:hover{
+			color: red;
+		}
+		td i{
+			font-size: 1.5em;
+
+			transition: color .5s;
+
+			cursor: pointer;
+		}
+	</style>
+</head>
+<body>
+	<div id="main" class="container">
+		<div class="panel panel-primary">
+			<div class="panel-heading"></div>
+			<div class="panel-body">
+				<form id="frmProducto" action="">
+				<div class="form-group col-md-6">
+					<label for='Nombre' class="control-label">Producto:</label>
+					<input name="Nombre" id="Nombre" type="text" class="form-control">
+					<input name="ProductoID" id="id" type="hidden" class="form-control">
+				</div>
+				<div class="form-group col-md-6">
+					<label for='Precio' class="control-label">Precio: </label>
+					<input name="Precio" id="Precio" type="text" class="form-control">
+				</div>
+				<button class="btn btn-primary" id="btnAgregar">Agregar</button>
+				<button class="btn btn-primary" id="btnEditar">Editar</button>
+			</form>
+			</div>
+		</div>
+		<table class="table table-stripped" id="tblProductos">
+			<tr id="cabecera">
+				<th>ID</th>
+				<th>Nombre</th>
+				<th>Precio</th>
+			</tr>
+		</table>
+	</div>
+</body>
+<script type="text/javascript">
+	tomarDatosDeServidor()
+
+	$('#frmProducto').submit(function (e) {
+		//Prevenimos que se envien los datos y haga refresh
+		e.preventDefault();
+		//Serializar la forma con los datos del nuevo producto
+		var nuevoProducto = $(this).serialize();
+		//Se declara llamada asincrona para crear producto
+		$.ajax({
+			url:'http://localhost:31130/Productos/CreateProducto',
+			type:'POST',
+			dataType:'JSON', //El formato de lo que recibes
+			data: nuevoProducto,
+			success: function(result,status,xhr){
+				tomarDatosDeServidor();
+			},
+			error: function(xhr,status,error){
+				alert('No se conecto :(');
+			},
+		});
+	});
+		  	function tomarDatosDeServidor(){
+					//Limpiar la tabla
+					$('#tblProductos >').children().not('#cabecera').remove();
+
+					//Datos dummy
+					$.ajax({
+						url: 'http://localhost:31130/productos/getJsonList',
+						type: 'GET',
+						dataType:'JSON',
+						success: function(result,status,xhr){
+							//Si la conexion se realizo
+							productos = result;
+							//Se rellena la tabla con los productos
+							for (var i = 0; i < productos.length; i++) {
+								insertarRenglon(productos[i]);
+							}
+
+							
+						},
+						error: function(xhr,status,error){
+							alert('No esta disponible el servidor');
+						},
+					});
+			}
+		function borrarProducto(id){
+		  	$.ajax({
+				    url:'http://localhost:31130/productos/borrarProducto',
+				    type:'POST',
+				    dataType:'JSON',
+				    data: {id:id},
+				    success:function(result, status,xhr){
+					    alert('Se elimino con exito');
+					    tomarDatosDeServidor();
+				    },
+				    error: function(xhr, status,error){
+					    alert("Se produjo un error de conexion");
+				    },
+			    });
+		  }
+
+		 function editarProducto(id){
+		  	$.ajax({
+		  		url:'http://localhost:31130/Productos/editarProducto',
+		  		type:'GET',
+		  		dataType:'JSON',
+		  		data:{id:id},
+		  		success: function(result, status, xhr){
+		  			$('#Nombre').val(result.nombre);
+		  			$('#Precio').val(result.precio);
+		  			$('#id').val(result.id);
+		  			tomarDatosDeServidor();
+		  		},
+		  		error: function(xhr, status, error){
+		  			alert('No se conecto al servidor');
+		  		},
+		  	});
+		  };
+
+		  $('#btnEditar').click(function(e){
+			e.preventDefault();
+			var nuevoProducto = $('#frmProducto').serialize();
+				
+			//Se declara llamada asincrona para crear producto
+					$.ajax({
+						url:'http://localhost:31130/Productos/editar',
+						type:'POST',
+						dataType:'JSON', //El formato de lo que recibes
+						data: nuevoProducto,
+						success: function(result,status,xhr){
+							tomarDatosDeServidor();
+							alert('Editado Exitoso')
+						},
+						error: function(xhr,status,error){
+							alert('No se a conectado ');
+						},
+					});
+
+		});
+
+	function insertarRenglon(productos){
+		var nuevoTR = $('<tr>')
+		.append($('<td>').html(productos.ProductoID))
+		.append($('<td>').html(productos.Nombre))
+		.append($('<td>').html('$'+productos.Precio))
+		.append($('<td>').html('<i  onClick="borrarProducto('+productos.ProductoID+')" class="glyphicon glyphicon-remove"></i>'))
+		.append($('<td>').html('<i  onClick="editarProducto('+productos.ProductoID+')" class="glyphicon glyphicon-edit"></i>'))
+		$('#tblProductos').append(nuevoTR);
+
+	}
+
+</script>
+</html>
